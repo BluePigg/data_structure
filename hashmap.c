@@ -10,6 +10,7 @@ typedef struct mapNode {
 
 typedef struct Hashmap {
   int arraysize;
+  int size;
   mapNode **arr;
   void (*put)(struct Hashmap *, void *, void *);
   void *(*get)(struct Hashmap *, void *);
@@ -19,14 +20,16 @@ typedef struct Hashmap {
   void (*free)(struct Hashmap *);
 } Hashmap;
 
+Hashmap init_hashmap(unsigned long (*gethash)(void *),
+                     int (*comparekeys)(void *, void *));
+
 unsigned long hashstr(void *key) {
   unsigned char *str = (unsigned char *)key;
   unsigned long hash = 5381;
-  int i = 0;
+
   int c = 1;
-  while (c && i < 5000) {
+  while (c) {
     c = *str++;
-    i++;
     hash = (hash << 5) + hash + c;
   }
   return hash;
@@ -78,23 +81,54 @@ static void _put(Hashmap *map, void *key, void *val) {
       existingNode->val = val;
       return;
     }
-    if (existingNode->next != NULL) {
-      existingNode = existingNode->next;
-    }
+    existingNode =
+        existingNode->next != NULL ? existingNode->next : existingNode;
+    if (existingNode->next == NULL)
+      break;
   }
   mapNode *node =
       createNode(key, val, existingNode == NULL ? NULL : existingNode);
   if (existingNode == NULL) {
     map->arr[idx] = node;
   }
-  int nullcount = 0;
-  for (int i = 0; i < map->arraysize; i++) {
-    nullcount += map->arr[i] == NULL ? 1 : 0;
-  }
-  if (nullcount <= 5) {
-    map->arraysize *= 2;
-    map->arr =
-        (mapNode **)realloc(map->arr, map->arraysize * sizeof(mapNode *));
+  map->size++;
+
+  if (map->size >= map->arraysize * 0.75) {
+    int old_size = map->arraysize;
+    mapNode **old_arr = map->arr;
+
+    int nsize = old_size * 2;
+    mapNode **new_arr = (mapNode **)malloc(nsize * sizeof(mapNode *));
+
+    for (int i = 0; i < nsize; i++) {
+      new_arr[i] = NULL;
+    }
+
+    for (int i = 0; i < old_size; i++) {
+      mapNode *node = old_arr[i];
+      while (node != NULL) {
+        int nidx = map->get_hash(node->key) % nsize;
+        mapNode *next = node->next;
+        mapNode *extNode = new_arr[nidx];
+        if (extNode != NULL) {
+          while (extNode->next != NULL) {
+            extNode = extNode->next;
+          }
+          extNode->next = node;
+          node->parent = extNode;
+          node->next = NULL;
+        } else {
+          new_arr[nidx] = node;
+          node->parent = NULL;
+          node->next = NULL;
+        }
+        node = next;
+      }
+    }
+
+    free(old_arr);
+    map->arraysize = nsize;
+    map->arr = new_arr;
   }
 }
 
@@ -130,10 +164,14 @@ static void _remove(Hashmap *map, void *key) {
       next->parent = prev == NULL ? NULL : prev;
     }
     free(node);
+    map->size--;
   }
   while (1) {
+    if (map->arraysize <= 100) {
+      break;
+    }
     int exist = 0;
-    for (int i = map->arraysize; i < map->arraysize; i++) {
+    for (int i = map->arraysize / 2; i < map->arraysize; i++) {
       if (map->arr[i] != NULL) {
         exist = 1;
         break;
@@ -165,7 +203,8 @@ Hashmap init_hashmap(unsigned long (*gethash)(void *),
                      int (*comparekeys)(void *, void *)) {
   Hashmap map;
   map.arraysize = 100;
-  map.arr = (mapNode **)malloc(map.arraysize * sizeof(mapNode **));
+  map.size = 0;
+  map.arr = (mapNode **)malloc(map.arraysize * sizeof(mapNode *));
   for (int i = 0; i < map.arraysize; i++) {
     map.arr[i] = NULL;
   }

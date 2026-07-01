@@ -15,6 +15,7 @@ typedef struct mapNode {
 
 typedef struct Hashmap {
   int arraysize;
+  int size;
   mapNode **arr;
   void (*put)(struct Hashmap *, void *, void *);
   void *(*get)(struct Hashmap *, void *);
