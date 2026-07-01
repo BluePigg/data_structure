@@ -79,12 +79,8 @@ static void rehash(Hashmap *map, int nsize, mapNode **new_arr) {
       mapNode *next = node->next;
       mapNode *extNode = new_arr[nidx];
       if (extNode != NULL) {
-        while (extNode->next != NULL) {
-          extNode = extNode->next;
-        }
-        extNode->next = node;
-        node->parent = extNode;
-        node->next = NULL;
+        extNode->parent = node;
+        node->next = extNode;
       } else {
         new_arr[nidx] = node;
         node->parent = NULL;
@@ -153,12 +149,12 @@ static void _remove(Hashmap *map, void *key) {
     mapNode *prev = node->parent;
     mapNode *next = node->next;
     if (prev) {
-      prev->next = next == NULL ? NULL : next;
+      prev->next = next;
     } else {
-      map->arr[idx] = next == NULL ? NULL : next;
+      map->arr[idx] = next;
     }
     if (next) {
-      next->parent = prev == NULL ? NULL : prev;
+      next->parent = prev;
     }
     free(node);
     map->size--;
@@ -175,6 +171,7 @@ static void _free(Hashmap *map) {
       node = next;
     }
   }
+  free(map);
 }
 
 Hashmap init_hashmap(unsigned long (*gethash)(void *),
