@@ -128,7 +128,7 @@ static void _put(Hashmap *map, void *key, void *val) {
 }
 
 static mapNode *get_node_w_key(Hashmap *map, void *key) {
-  int idx = map->get_hash(key) % map->arraysize;
+  int idx = map->get_hash(key) % (unsigned long)map->arraysize;
   mapNode *node = map->arr[idx];
   while (node != NULL) {
     if (map->compare_keys(node->key, key)) {
