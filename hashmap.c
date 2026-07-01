@@ -82,10 +82,10 @@ static void rehash(Hashmap *map, int nsize, mapNode **new_arr) {
         extNode->parent = node;
         node->next = extNode;
       } else {
-        new_arr[nidx] = node;
         node->parent = NULL;
         node->next = NULL;
       }
+      new_arr[nidx] = node;
       node = next;
     }
   }
