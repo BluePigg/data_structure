@@ -20,8 +20,8 @@ typedef struct Hashmap {
   void (*free)(struct Hashmap *);
 } Hashmap;
 
-Hashmap init_hashmap(unsigned long (*gethash)(void *),
-                     int (*comparekeys)(void *, void *));
+Hashmap *init_hashmap(unsigned long (*gethash)(void *),
+                      int (*comparekeys)(void *, void *));
 
 unsigned long hashstr(void *key) {
   unsigned char *str = (unsigned char *)key;
@@ -150,6 +150,7 @@ static void _remove(Hashmap *map, void *key) {
     mapNode *next = node->next;
     if (prev) {
       prev->next = next;
+      next->parent = prev;
     } else {
       map->arr[idx] = next;
     }
@@ -174,21 +175,21 @@ static void _free(Hashmap *map) {
   free(map);
 }
 
-Hashmap init_hashmap(unsigned long (*gethash)(void *),
-                     int (*comparekeys)(void *, void *)) {
-  Hashmap map;
-  map.arraysize = 100;
-  map.size = 0;
-  map.arr = (mapNode **)malloc(map.arraysize * sizeof(mapNode *));
-  for (int i = 0; i < map.arraysize; i++) {
-    map.arr[i] = NULL;
+Hashmap *init_hashmap(unsigned long (*gethash)(void *),
+                      int (*comparekeys)(void *, void *)) {
+  Hashmap *map;
+  map->arraysize = 100;
+  map->size = 0;
+  map->arr = (mapNode **)malloc(map->arraysize * sizeof(mapNode *));
+  for (int i = 0; i < map->arraysize; i++) {
+    map->arr[i] = NULL;
   }
-  map.put = _put;
-  map.get = _get;
-  map.remove = _remove;
-  map.free = _free;
-  map.get_hash = gethash;
-  map.compare_keys = comparekeys;
+  map->put = _put;
+  map->get = _get;
+  map->remove = _remove;
+  map->free = _free;
+  map->get_hash = gethash;
+  map->compare_keys = comparekeys;
 
   return map;
 }

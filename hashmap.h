@@ -29,7 +29,7 @@ extern unsigned long hashstr(void *key);
 extern unsigned long hashint(void *key);
 extern int cmpstr(void *fst_p, void *snd_p);
 extern int cmpint(void *fst_p, void *snd_p);
-extern Hashmap init_hashmap(unsigned long (*gethash)(void *),
-                            int (*comparekeys)(void *, void *));
+extern Hashmap *init_hashmap(unsigned long (*gethash)(void *),
+                             int (*comparekeys)(void *, void *));
 
 #endif // !__HASHMAP_H__
