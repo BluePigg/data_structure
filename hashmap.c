@@ -30,6 +30,9 @@ unsigned long hashstr(void *key) {
   int c = 1;
   while (c) {
     c = *str++;
+    if (c == 0) {
+      break;
+    }
     hash = (hash << 5) + hash + c;
   }
   return hash;
@@ -73,6 +76,36 @@ static mapNode *createNode(void *key, void *val, mapNode *prev) {
   return node;
 }
 
+static void rehash(Hashmap *map, int nsize, mapNode **new_arr) {
+  int old_size = map->arraysize;
+  mapNode **old_arr = map->arr;
+  for (int i = 0; i < old_size; i++) {
+    mapNode *node = old_arr[i];
+    while (node != NULL) {
+      int nidx = map->get_hash(node->key) % nsize;
+      mapNode *next = node->next;
+      mapNode *extNode = new_arr[nidx];
+      if (extNode != NULL) {
+        while (extNode->next != NULL) {
+          extNode = extNode->next;
+        }
+        extNode->next = node;
+        node->parent = extNode;
+        node->next = NULL;
+      } else {
+        new_arr[nidx] = node;
+        node->parent = NULL;
+        node->next = NULL;
+      }
+      node = next;
+    }
+  }
+
+  free(old_arr);
+  map->arraysize = nsize;
+  map->arr = new_arr;
+}
+
 static void _put(Hashmap *map, void *key, void *val) {
   int idx = map->get_hash(key) % map->arraysize;
   mapNode *existingNode = map->arr[idx];
@@ -94,41 +127,14 @@ static void _put(Hashmap *map, void *key, void *val) {
   map->size++;
 
   if (map->size >= map->arraysize * 0.75) {
-    int old_size = map->arraysize;
-    mapNode **old_arr = map->arr;
-
-    int nsize = old_size * 2;
+    int nsize = map->arraysize * 2;
     mapNode **new_arr = (mapNode **)malloc(nsize * sizeof(mapNode *));
 
     for (int i = 0; i < nsize; i++) {
       new_arr[i] = NULL;
     }
 
-    for (int i = 0; i < old_size; i++) {
-      mapNode *node = old_arr[i];
-      while (node != NULL) {
-        int nidx = map->get_hash(node->key) % nsize;
-        mapNode *next = node->next;
-        mapNode *extNode = new_arr[nidx];
-        if (extNode != NULL) {
-          while (extNode->next != NULL) {
-            extNode = extNode->next;
-          }
-          extNode->next = node;
-          node->parent = extNode;
-          node->next = NULL;
-        } else {
-          new_arr[nidx] = node;
-          node->parent = NULL;
-          node->next = NULL;
-        }
-        node = next;
-      }
-    }
-
-    free(old_arr);
-    map->arraysize = nsize;
-    map->arr = new_arr;
+    rehash(map, nsize, new_arr);
   }
 }
 
@@ -180,9 +186,12 @@ static void _remove(Hashmap *map, void *key) {
     if (exist) {
       break;
     } else {
-      map->arraysize /= 2;
-      map->arr =
-          (mapNode **)realloc(map->arr, map->arraysize * sizeof(mapNode *));
+      mapNode **new_arr =
+          (mapNode **)malloc(map->arraysize / 2 * sizeof(mapNode *));
+      for (int i = 0; i < map->arraysize / 2; i++) {
+        new_arr[i] = NULL;
+      }
+      rehash(map, map->arraysize / 2, new_arr);
     }
   }
 }
