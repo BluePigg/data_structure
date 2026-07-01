@@ -1,23 +1,27 @@
+#include <stdint.h>
 #include <stdlib.h>
 
 #define STR_SIZE 500
 #define ARR_SIZE 100
 
 typedef struct mapNode {
-  unsigned char *key;
-  int *val;
+  void *key;
+  void *val;
   struct mapNode *next;
   struct mapNode *parent;
 } mapNode;
 
 typedef struct Hashmap {
   mapNode *arr[ARR_SIZE];
-  void (*put)(struct Hashmap *, unsigned char *, int *);
-  int *(*get)(struct Hashmap *, unsigned char *);
-  void (*remove)(struct Hashmap *, unsigned char *);
+  void (*put)(struct Hashmap *, void *, void *);
+  void *(*get)(struct Hashmap *, void *);
+  void (*remove)(struct Hashmap *, void *);
+  unsigned long (*get_hash)(void *);
+  int (*compare_keys)(void *, void *);
 } Hashmap;
 
-static unsigned long get_hash(unsigned char *str) {
+unsigned long hashstr(void *key) {
+  unsigned char *str = (unsigned char *)key;
   unsigned long hash = 5381;
   int c = 1;
   while (c) {
@@ -28,7 +32,17 @@ static unsigned long get_hash(unsigned char *str) {
   return hash;
 }
 
-static int cmpstr(unsigned char *fst, unsigned char *snd) {
+unsigned long hashint(void *key) {
+  unsigned int x = *(unsigned int *)key;
+  x = ((x >> 16) ^ x) * 0x45d9f3b;
+  x = ((x >> 16) ^ x) * 0x45d9f3b;
+  x = (x >> 16) ^ x;
+  return x;
+}
+
+int cmpstr(void *fst_p, void *snd_p) {
+  unsigned char *fst = (unsigned char *)fst_p;
+  unsigned char *snd = (unsigned char *)snd_p;
   for (int i = 0; i < STR_SIZE; i++) {
     if (fst[i] == snd[i]) {
       if (fst[i] == 0) {
@@ -41,7 +55,9 @@ static int cmpstr(unsigned char *fst, unsigned char *snd) {
   return 0;
 }
 
-static mapNode *createNode(unsigned char *key, int *val, mapNode *prev) {
+int cmpint(void *fst_p, void *snd_p) { return *(int *)fst_p == *(int *)snd_p; }
+
+static mapNode *createNode(void *key, void *val, mapNode *prev) {
   mapNode *node = (mapNode *)malloc(sizeof(mapNode));
   node->key = key;
   node->val = val;
@@ -52,8 +68,8 @@ static mapNode *createNode(unsigned char *key, int *val, mapNode *prev) {
   return node;
 }
 
-static void _put(Hashmap *map, unsigned char *key, int *val) {
-  int idx = get_hash(key) % ARR_SIZE;
+static void _put(Hashmap *map, void *key, void *val) {
+  int idx = map->get_hash(key) % ARR_SIZE;
   mapNode *existingNode = map->arr[idx];
   while (existingNode != NULL && existingNode->next != NULL) {
     existingNode = existingNode->next;
@@ -65,11 +81,11 @@ static void _put(Hashmap *map, unsigned char *key, int *val) {
   }
 }
 
-static mapNode *get_node_w_key(Hashmap *map, unsigned char *key) {
-  int idx = get_hash(key) % ARR_SIZE;
+static mapNode *get_node_w_key(Hashmap *map, void *key) {
+  int idx = map->get_hash(key) % ARR_SIZE;
   mapNode *node = map->arr[idx];
   while (node != NULL) {
-    if (cmpstr(node->key, key)) {
+    if (map->compare_keys(node->key, key)) {
       return node;
     }
     node = node->next;
@@ -77,13 +93,13 @@ static mapNode *get_node_w_key(Hashmap *map, unsigned char *key) {
   return NULL;
 }
 
-static int *_get(Hashmap *map, unsigned char *key) {
+static void *_get(Hashmap *map, void *key) {
   mapNode *node = get_node_w_key(map, key);
   return node == NULL ? NULL : node->val;
 }
 
-static void _remove(Hashmap *map, unsigned char *key) {
-  int idx = get_hash(key) % ARR_SIZE;
+static void _remove(Hashmap *map, void *key) {
+  int idx = map->get_hash(key) % ARR_SIZE;
   mapNode *node = get_node_w_key(map, key);
   if (node != NULL) {
     mapNode *prev = node->parent;
@@ -100,7 +116,8 @@ static void _remove(Hashmap *map, unsigned char *key) {
   }
 }
 
-Hashmap init_hashmap() {
+Hashmap init_hashmap(unsigned long (*gethash)(void *),
+                     int (*comparekeys)(void *, void *)) {
   Hashmap map;
   for (int i = 0; i < ARR_SIZE; i++) {
     map.arr[i] = NULL;
@@ -108,6 +125,8 @@ Hashmap init_hashmap() {
   map.put = _put;
   map.get = _get;
   map.remove = _remove;
+  map.get_hash = gethash;
+  map.compare_keys = comparekeys;
 
   return map;
 }

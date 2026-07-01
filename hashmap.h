@@ -15,11 +15,17 @@ typedef struct mapNode {
 
 typedef struct Hashmap {
   mapNode *arr[ARR_SIZE];
-  void (*put)(struct Hashmap *, unsigned char *, int *);
-  int *(*get)(struct Hashmap *, unsigned char *);
-  void (*remove)(struct Hashmap *, unsigned char *);
+  void (*put)(struct Hashmap *, void *, void *);
+  void *(*get)(struct Hashmap *, void *);
+  void (*remove)(struct Hashmap *, void *);
+  unsigned long (*get_hash)(void *);
+  int (*compare_keys)(void *, void *);
 } Hashmap;
-
-extern Hashmap init_hashmap();
+extern unsigned long hashstr(void *key);
+extern unsigned long hashint(void *key);
+extern int cmpstr(void *fst_p, void *snd_p);
+extern int cmpint(void *fst_p, void *snd_p);
+extern Hashmap init_hashmap(unsigned long (*gethash)(void *),
+                            int (*comparekeys)(void *, void *));
 
 #endif // !__HASHMAP_H__

@@ -31,7 +31,7 @@ int _stoi(char *chr) {
 }
 
 int main() {
-  Hashmap map = init_hashmap();
+  Hashmap map = init_hashmap(hashstr, cmpstr);
   while (1) {
     char key[STR_SIZE];
     int size = 1;
@@ -40,6 +40,7 @@ int main() {
     printf("%s 키를 입력하세요 (종료시 q) > ", CLSC);
     fgets(key, STR_SIZE, stdin);
     if (key[0] == 'q' && key[1] == '\n') {
+      free(val);
       break;
     }
     int *getValue = map.get(&map, (unsigned char *)key);
@@ -53,7 +54,7 @@ int main() {
         if (vc[0] == 'q' && vc[1] == '\n') {
           break;
         }
-        if (idx >= size) {
+        if (idx >= size - 1) {
           size *= 2;
           val = (int *)realloc(val, size * sizeof(int));
           for (int i = idx; i < size; i++) {
@@ -63,7 +64,10 @@ int main() {
         val[idx] = v;
         idx++;
       }
+      val[idx] = -1;
+      map.put(&map, (unsigned char *)key, val);
     } else {
+      free(val);
       int i = 0;
       printf("이미 있는데요? 뭔지 보여드림;;\n");
       while (getValue[i] != -1) {
@@ -73,8 +77,6 @@ int main() {
       printf("\n");
       usleep(1000 * 1000);
     }
-
-    map.put(&map, (unsigned char *)key, val);
   }
 
   return 0;
