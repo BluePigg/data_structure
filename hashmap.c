@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define STR_SIZE 500
 #define ARR_SIZE 100
 
 typedef struct mapNode {
@@ -23,10 +22,11 @@ typedef struct Hashmap {
 unsigned long hashstr(void *key) {
   unsigned char *str = (unsigned char *)key;
   unsigned long hash = 5381;
+  int i = 0;
   int c = 1;
-  while (c) {
+  while (c && i < 5000) {
     c = *str++;
-
+    i++;
     hash = (hash << 5) + hash + c;
   }
   return hash;
@@ -43,7 +43,8 @@ unsigned long hashint(void *key) {
 int cmpstr(void *fst_p, void *snd_p) {
   unsigned char *fst = (unsigned char *)fst_p;
   unsigned char *snd = (unsigned char *)snd_p;
-  for (int i = 0; i < STR_SIZE; i++) {
+  int i = 0;
+  while (i < 5000) {
     if (fst[i] == snd[i]) {
       if (fst[i] == 0) {
         return 1;
@@ -51,6 +52,7 @@ int cmpstr(void *fst_p, void *snd_p) {
     } else {
       return 0;
     }
+    i++;
   }
   return 0;
 }
@@ -72,6 +74,10 @@ static void _put(Hashmap *map, void *key, void *val) {
   int idx = map->get_hash(key) % ARR_SIZE;
   mapNode *existingNode = map->arr[idx];
   while (existingNode != NULL && existingNode->next != NULL) {
+    if (map->compare_keys(existingNode->key, key)) {
+      existingNode->val = val;
+      return;
+    }
     existingNode = existingNode->next;
   }
   mapNode *node =
