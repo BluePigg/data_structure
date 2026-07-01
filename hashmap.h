@@ -20,6 +20,7 @@ typedef struct Hashmap {
   void (*remove)(struct Hashmap *, void *);
   unsigned long (*get_hash)(void *);
   int (*compare_keys)(void *, void *);
+  void (*free)(struct Hashmap *);
 } Hashmap;
 extern unsigned long hashstr(void *key);
 extern unsigned long hashint(void *key);

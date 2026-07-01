@@ -17,6 +17,7 @@ typedef struct Hashmap {
   void (*remove)(struct Hashmap *, void *);
   unsigned long (*get_hash)(void *);
   int (*compare_keys)(void *, void *);
+  void (*free)(struct Hashmap *);
 } Hashmap;
 
 unsigned long hashstr(void *key) {
@@ -73,12 +74,14 @@ static mapNode *createNode(void *key, void *val, mapNode *prev) {
 static void _put(Hashmap *map, void *key, void *val) {
   int idx = map->get_hash(key) % ARR_SIZE;
   mapNode *existingNode = map->arr[idx];
-  while (existingNode != NULL && existingNode->next != NULL) {
+  while (existingNode != NULL) {
     if (map->compare_keys(existingNode->key, key)) {
       existingNode->val = val;
       return;
     }
-    existingNode = existingNode->next;
+    if (existingNode->next != NULL) {
+      existingNode = existingNode->next;
+    }
   }
   mapNode *node =
       createNode(key, val, existingNode == NULL ? NULL : existingNode);
@@ -122,6 +125,18 @@ static void _remove(Hashmap *map, void *key) {
   }
 }
 
+static void _free(Hashmap *map) {
+  for (int i = 0; i < ARR_SIZE; i++) {
+    mapNode *node = map->arr[i];
+    mapNode *next = NULL;
+    while (node != NULL) {
+      next = node->next;
+      free(node);
+      node = next;
+    }
+  }
+}
+
 Hashmap init_hashmap(unsigned long (*gethash)(void *),
                      int (*comparekeys)(void *, void *)) {
   Hashmap map;
@@ -131,6 +146,7 @@ Hashmap init_hashmap(unsigned long (*gethash)(void *),
   map.put = _put;
   map.get = _get;
   map.remove = _remove;
+  map.free = _free;
   map.get_hash = gethash;
   map.compare_keys = comparekeys;
 
