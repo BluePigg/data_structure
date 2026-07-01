@@ -49,18 +49,11 @@ unsigned long hashint(void *key) {
 int cmpstr(void *fst_p, void *snd_p) {
   unsigned char *fst = (unsigned char *)fst_p;
   unsigned char *snd = (unsigned char *)snd_p;
-  int i = 0;
-  while (1) {
-    if (fst[i] == snd[i]) {
-      if (fst[i] == 0) {
-        return 1;
-      }
-    } else {
-      return 0;
-    }
-    i++;
+  while (*fst && (*fst == *snd)) {
+    fst++;
+    snd++;
   }
-  return 0;
+  return *fst == *snd;
 }
 
 int cmpint(void *fst_p, void *snd_p) { return *(int *)fst_p == *(int *)snd_p; }
@@ -109,18 +102,16 @@ static void rehash(Hashmap *map, int nsize, mapNode **new_arr) {
 static void _put(Hashmap *map, void *key, void *val) {
   int idx = map->get_hash(key) % map->arraysize;
   mapNode *existingNode = map->arr[idx];
+  mapNode *lastNode = NULL;
   while (existingNode != NULL) {
     if (map->compare_keys(existingNode->key, key)) {
       existingNode->val = val;
       return;
     }
-    existingNode =
-        existingNode->next != NULL ? existingNode->next : existingNode;
-    if (existingNode->next == NULL)
-      break;
+    lastNode = existingNode;
+    existingNode = existingNode->next;
   }
-  mapNode *node =
-      createNode(key, val, existingNode == NULL ? NULL : existingNode);
+  mapNode *node = createNode(key, val, lastNode);
   if (existingNode == NULL) {
     map->arr[idx] = node;
   }
@@ -171,28 +162,6 @@ static void _remove(Hashmap *map, void *key) {
     }
     free(node);
     map->size--;
-  }
-  while (1) {
-    if (map->arraysize <= 100) {
-      break;
-    }
-    int exist = 0;
-    for (int i = map->arraysize / 2; i < map->arraysize; i++) {
-      if (map->arr[i] != NULL) {
-        exist = 1;
-        break;
-      }
-    }
-    if (exist) {
-      break;
-    } else {
-      mapNode **new_arr =
-          (mapNode **)malloc(map->arraysize / 2 * sizeof(mapNode *));
-      for (int i = 0; i < map->arraysize / 2; i++) {
-        new_arr[i] = NULL;
-      }
-      rehash(map, map->arraysize / 2, new_arr);
-    }
   }
 }
 
