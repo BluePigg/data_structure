@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 typedef struct TreeNode {
+  int idx;
   int data;
   int height;
   struct TreeNode *parent;
@@ -12,14 +13,15 @@ typedef struct TreeNode {
 
 typedef struct Tree {
   TreeNode *root;
-  TreeNode *(*insert)(struct Tree *, int);
+  TreeNode *(*insert)(struct Tree *, int, int);
   void (*print)(struct Tree *);
 } Tree;
 
-static TreeNode *createNode(int data) {
+static TreeNode *createNode(int idx, int data) {
   TreeNode *new = (TreeNode *)malloc(sizeof(TreeNode));
-  new->data = data;
+  new->idx = idx;
   new->height = 0;
+  new->data = data;
   new->parent = NULL;
   new->left = NULL;
   new->right = NULL;
@@ -102,7 +104,7 @@ static TreeNode *_rotate_rl(Tree *tree, TreeNode *node) {
   return _rotate_rr(tree, node->parent);
 }
 
-static int _replace_nodes(Tree *tree, TreeNode *node, int inserted_data) {
+static int _replace_nodes(Tree *tree, TreeNode *node, int inserted_idx) {
   TreeNode *parent = node->parent;
 
   if (parent == NULL) {
@@ -114,13 +116,13 @@ static int _replace_nodes(Tree *tree, TreeNode *node, int inserted_data) {
 
   int bf = lheight - rheight;
 
-  if (bf > 1 && inserted_data < parent->left->data) {
+  if (bf > 1 && inserted_idx < parent->left->idx) {
     node = _rotate_ll(tree, node);
-  } else if (bf < -1 && inserted_data > parent->right->data) {
+  } else if (bf < -1 && inserted_idx > parent->right->idx) {
     node = _rotate_rr(tree, node);
-  } else if (bf > 1 && inserted_data > parent->left->data) {
+  } else if (bf > 1 && inserted_idx > parent->left->idx) {
     node = _rotate_lr(tree, node);
-  } else if (bf < -1 && inserted_data < parent->right->data) {
+  } else if (bf < -1 && inserted_idx < parent->right->idx) {
     node = _rotate_rl(tree, node);
   }
 
@@ -138,7 +140,7 @@ static void print_tree_recu(Tree *tree, TreeNode *node, int isleft,
   if (node->parent != NULL) {
     printf("%s%s", prefix, isleft ? "\\-- " : "/-- ");
   }
-  printf("%d", node->data);
+  printf("%d", node->idx);
   printf("%s", node->height == tree->root->height ? "--|\n" : "\n");
   snprintf(pf, 512, "%s%s", prefix, isleft ? "    " : "|   ");
   pf[0] = ' ';
@@ -149,18 +151,18 @@ static void _print_tree(Tree *tree) {
   print_tree_recu(tree, tree->root, 0, "");
 }
 
-static TreeNode *_insert(Tree *tree, int data) {
-  TreeNode *new = createNode(data);
+static TreeNode *_insert(Tree *tree, int idx, int data) {
+  TreeNode *new = createNode(idx, data);
   TreeNode *cur = tree->root;
   if (cur == NULL) {
     tree->root = new;
     return new;
   }
-  if (cur->data == new->data) {
+  if (cur->idx == new->idx) {
     return cur;
   }
   while (1) {
-    int smaller = data < cur->data;
+    int smaller = idx < cur->idx;
     TreeNode *ncur = smaller ? cur->left : cur->right;
     if (ncur == NULL) {
       if (smaller) {
@@ -178,7 +180,7 @@ static TreeNode *_insert(Tree *tree, int data) {
 
   TreeNode *for_rotation = new;
   while (for_rotation != NULL) {
-    int rotated = _replace_nodes(tree, for_rotation, new->data);
+    int rotated = _replace_nodes(tree, for_rotation, new->idx);
     for_rotation = for_rotation->parent;
     if (rotated == 1) {
       break;
@@ -197,7 +199,7 @@ Tree initTree(int count, ...) {
   va_start(ap, count);
 
   for (int i = 0; i < count; i++) {
-    tree.insert(&tree, va_arg(ap, int));
+    tree.insert(&tree, va_arg(ap, int), 0);
   }
   va_end(ap);
 

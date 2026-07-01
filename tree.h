@@ -2,6 +2,7 @@
 #define __TREE_H__
 
 typedef struct TreeNode {
+  int idx;
   int data;
   int height;
   struct TreeNode *parent;
@@ -11,7 +12,7 @@ typedef struct TreeNode {
 
 typedef struct Tree {
   TreeNode *root;
-  TreeNode *(*insert)(struct Tree *, int);
+  TreeNode *(*insert)(struct Tree *, int, int);
   void (*print)(struct Tree *);
 } Tree;
 
