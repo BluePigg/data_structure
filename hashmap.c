@@ -150,7 +150,6 @@ static void _remove(Hashmap *map, void *key) {
     mapNode *next = node->next;
     if (prev) {
       prev->next = next;
-      next->parent = prev;
     } else {
       map->arr[idx] = next;
     }
@@ -177,7 +176,7 @@ static void _free(Hashmap *map) {
 
 Hashmap *init_hashmap(unsigned long (*gethash)(void *),
                       int (*comparekeys)(void *, void *)) {
-  Hashmap *map;
+  Hashmap *map = (Hashmap *)malloc(sizeof(Hashmap));
   map->arraysize = 100;
   map->size = 0;
   map->arr = (mapNode **)malloc(map->arraysize * sizeof(mapNode *));
