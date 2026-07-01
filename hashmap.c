@@ -65,6 +65,8 @@ static mapNode *createNode(void *key, void *val, mapNode *prev) {
   if (prev != NULL) {
     prev->next = node;
     node->parent = prev;
+  } else {
+    node->parent = NULL;
   }
   return node;
 }
@@ -82,9 +84,9 @@ static void rehash(Hashmap *map, int nsize, mapNode **new_arr) {
         extNode->parent = node;
         node->next = extNode;
       } else {
-        node->parent = NULL;
         node->next = NULL;
       }
+      node->parent = NULL;
       new_arr[nidx] = node;
       node = next;
     }
