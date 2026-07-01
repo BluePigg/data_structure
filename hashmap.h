@@ -14,7 +14,8 @@ typedef struct mapNode {
 } mapNode;
 
 typedef struct Hashmap {
-  mapNode *arr[ARR_SIZE];
+  int arraysize;
+  mapNode **arr;
   void (*put)(struct Hashmap *, void *, void *);
   void *(*get)(struct Hashmap *, void *);
   void (*remove)(struct Hashmap *, void *);
@@ -22,6 +23,7 @@ typedef struct Hashmap {
   int (*compare_keys)(void *, void *);
   void (*free)(struct Hashmap *);
 } Hashmap;
+
 extern unsigned long hashstr(void *key);
 extern unsigned long hashint(void *key);
 extern int cmpstr(void *fst_p, void *snd_p);
