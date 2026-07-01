@@ -108,7 +108,7 @@ static void _put(Hashmap *map, void *key, void *val) {
     existingNode = existingNode->next;
   }
   mapNode *node = createNode(key, val, lastNode);
-  if (existingNode == NULL) {
+  if (lastNode == NULL) {
     map->arr[idx] = node;
   }
   map->size++;
