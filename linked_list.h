@@ -5,18 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct NODE {
-  int data;
-  struct NODE *next;
-} Node;
+typedef struct LLNODE {
+  void *data;
+  struct LLNODE *next;
+  struct LLNODE *parent;
+} LLNode;
 
 typedef struct LINKED_LIST {
-  Node *begin;
-  Node *(*insert)(Node *, int);
-  Node *(*search_nd)(struct LINKED_LIST *, int);
-  int (*search_va)(struct LINKED_LIST *, int);
+  LLNode *begin;
+  LLNode *last;
+  LLNode *(*insert)(struct LINKED_LIST *, LLNode *, void *);
+  void (*remove)(struct LINKED_LIST *, LLNode *);
 } Linked_list;
 
-extern Linked_list init_linked_list(int count, ...);
+extern Linked_list init_linked_list();
 
 #endif // linked_list

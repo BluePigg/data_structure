@@ -31,7 +31,7 @@ int _stoi(char *chr) {
 }
 
 int main() {
-  Hashmap map = init_hashmap(hashstr, cmpstr);
+  Hashmap *map = init_hashmap(hashstr, cmpstr);
   while (1) {
     char key[STR_SIZE];
     int size = 1;
@@ -43,7 +43,7 @@ int main() {
       free(val);
       break;
     }
-    int *getValue = map.get(&map, (unsigned char *)key);
+    int *getValue = map->get(map, (unsigned char *)key);
     if (getValue == NULL) {
       while (1) {
         char vc[STR_SIZE];
@@ -65,7 +65,7 @@ int main() {
         idx++;
       }
       val[idx] = -1;
-      map.put(&map, (unsigned char *)key, val);
+      map->put(map, (unsigned char *)key, val);
     } else {
       free(val);
       int i = 0;
@@ -76,6 +76,13 @@ int main() {
       }
       printf("\n");
       usleep(1000 * 1000);
+
+      char deleteCheck[STR_SIZE];
+      printf("%s 혹시 삭제 해드릴까? (y/n) > ", CLSC);
+      fgets(deleteCheck, STR_SIZE, stdin);
+      if (deleteCheck[0] == 'y' && deleteCheck[1] == '\n') {
+        map->remove(map, (unsigned char *)key);
+      }
     }
   }
 

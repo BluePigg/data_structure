@@ -1,74 +1,65 @@
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct LLNODE {
-  int data;
+  void *data;
   struct LLNODE *next;
+  struct LLNODE *parent;
 } LLNode;
 
 typedef struct LINKED_LIST {
   LLNode *begin;
-  LLNode *(*insert)(LLNode *, int);
-  LLNode *(*search_nd)(struct LINKED_LIST *, int);
-  int (*search_va)(struct LINKED_LIST *, int);
+  LLNode *last;
+  LLNode *(*insert)(struct LINKED_LIST *, LLNode *, void *);
+  void (*remove)(struct LINKED_LIST *, LLNode *);
 } Linked_list;
 
-static LLNode *_insert(LLNode *node, int data) {
+static LLNode *_insert(Linked_list *list, LLNode *node, void *data) {
   LLNode *new = (LLNode *)malloc(sizeof(LLNode));
   new->data = data;
   new->next = NULL;
-  if (node->next == NULL) {
-    node->next = new;
+  new->parent = NULL;
+  if (list->begin == NULL && list->last == NULL) {
+    list->begin = new;
+    list->last = new;
   } else {
-    LLNode *next = node->next;
-    node->next = new;
-    new->next = next;
+    if (node->next == NULL) {
+      node->next = new;
+      new->parent = node;
+      list->last = new;
+    } else {
+      LLNode *next = node->next;
+      node->next = new;
+      new->parent = node;
+      new->next = next;
+      next->parent = new;
+    }
   }
   return new;
 }
 
-static LLNode *_search_nd(Linked_list *list, int index) {
-  LLNode *nd = list->begin;
-  for (int i = 0; i < index; i++) {
-    if (nd->next != NULL) {
-      nd = nd->next;
-    } else {
-      break;
-    }
+static void _remove(Linked_list *list, LLNode *node) {
+  LLNode *parent = node->parent;
+  LLNode *next = node->next;
+  if (parent != NULL) {
+    parent->next = next;
+  } else {
+    list->begin = next;
   }
-  return nd;
+  if (next != NULL) {
+    next->parent = parent;
+  } else {
+    list->last = parent;
+  }
+  free(node);
 }
 
-static int _search_va(Linked_list *list, int index) {
-  LLNode *nd = list->search_nd(list, index);
-  return nd->data;
-}
-
-Linked_list init_linked_list(int count, ...) {
+Linked_list init_linked_list() {
   Linked_list list;
   list.begin = NULL;
+  list.last = NULL;
   list.insert = _insert;
-  list.search_nd = _search_nd;
-  list.search_va = _search_va;
-
-  va_list ap;
-  va_start(ap, count);
-
-  LLNode *current;
-  for (int i = 0; i < count; i++) {
-    if (list.begin == NULL) {
-      LLNode *first = (LLNode *)malloc(sizeof(LLNode));
-      first->data = va_arg(ap, int);
-      first->next = NULL;
-      list.begin = first;
-      current = first;
-    } else {
-      current = list.insert(current, va_arg(ap, int));
-    }
-  }
-
-  va_end(ap);
+  list.remove = _remove;
 
   return list;
 }

@@ -62,6 +62,7 @@ static mapNode *createNode(void *key, void *val, mapNode *prev) {
   mapNode *node = (mapNode *)malloc(sizeof(mapNode));
   node->key = key;
   node->val = val;
+  node->next = NULL;
   if (prev != NULL) {
     prev->next = node;
     node->parent = prev;
